@@ -473,24 +473,42 @@
         });
 
         const hash = window.location.hash || "";
-        const hasToken = /access_token=/.test(hash);
+        const query = window.location.search || "";
+        const queryParams = new URLSearchParams(query);
+        const hasTokenInHash = /access_token=/.test(hash);
+        const hasAuthPayloadInQuery =
+          queryParams.has("access_token") ||
+          queryParams.has("refresh_token") ||
+          queryParams.has("token_hash") ||
+          queryParams.has("code") ||
+          queryParams.has("type");
+        const hasToken = hasTokenInHash || hasAuthPayloadInQuery;
         const openApp = document.getElementById("openApp");
         const status = document.getElementById("status");
         const desc = document.getElementById("desc");
         const raw = document.getElementById("raw");
         const copyBtn = document.getElementById("copyLink");
+        const isZh = locale === "zh" || locale === "zh-Hant";
 
-        const appUrl = hasToken
+        const appUrl = hasTokenInHash
           ? `pickright://auth/signup${hash}`
           : "pickright://auth/signup";
 
         openApp.href = appUrl;
-        raw.textContent = hasToken ? t.raw_has_token : t.raw_missing;
+        raw.textContent = hasToken
+          ? t.raw_has_token
+          : isZh
+              ? "此連結未附帶 token 資訊（在部分平台屬正常情況）。請回到 App 內按「確認信件已驗證」完成同步。"
+              : "No token payload in this URL (this can be normal on some platforms). Return to the app and tap \"Confirmation verified\".";
 
         if (!hasToken) {
-          status.className = "warn";
-          status.textContent = t.status_missing;
-          desc.textContent = t.desc_missing;
+          status.className = "ok";
+          status.textContent = isZh
+            ? "信箱已驗證，請回到 App 完成同步"
+            : "Email verified. Return to the app to finish sync.";
+          desc.textContent = isZh
+            ? "你可以直接按下方按鈕開啟吃定了，並在帳號管理頁點「確認信件已驗證」。"
+            : "Use the button below to open What to eat?, then tap \"Confirmation verified\" in Account Management.";
         } else {
           // Best-effort deep link launch for mobile browsers.
           setTimeout(() => {
